@@ -2,7 +2,6 @@ fastapi
 uvicorn[standard]
 sqlalchemy
 passlib[bcrypt]
-bcrypt
 python-jose[cryptography]
 python-multipart
 psycopg2-binary
