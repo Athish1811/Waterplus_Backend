@@ -7,4 +7,4 @@ python-jose[cryptography]
 python-multipart
 psycopg2-binary
 python-dotenv
-pydantic
+pydantic[email]
