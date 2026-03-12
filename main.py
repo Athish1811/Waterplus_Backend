@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import logging
 from app.core.config import settings
 from app.core.database import init_db
 
@@ -17,6 +18,14 @@ from app.routes import (
 # ===============================
 # Create FastAPI App
 # ===============================
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("wateraplus")
+
 app = FastAPI(
     title="Watera Plus API",
     description="Backend API for Watera Plus Water Delivery System",
@@ -28,7 +37,7 @@ app = FastAPI(
 # ===============================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Temporary for testing
+    allow_origins=settings.ALLOWED_ORIGINS,  # Restrict to trusted origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
