@@ -49,7 +49,7 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
         password=hashed_password,
         phone=user_data.phone,
         address=user_data.address,
-        role=UserRole(user_data.role)
+        role=UserRole.USER  # Always default to USER — never trust client-provided role
     )
 
     db.add(new_user)

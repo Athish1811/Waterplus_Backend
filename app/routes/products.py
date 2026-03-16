@@ -68,7 +68,7 @@ def create_product(
             detail="Product already exists"
         )
 
-    new_product = Product(**product.dict())
+    new_product = Product(**product.model_dump())
 
     db.add(new_product)
     db.commit()

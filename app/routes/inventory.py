@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.product import Product
+from app.models.user import User, UserRole
+from app.dependencies import get_current_user
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/inventory", tags=["Inventory"])
@@ -10,21 +12,32 @@ class StockUpdate(BaseModel):
     quantity: int
 
 @router.get("/")
-def get_inventory(db: Session = Depends(get_db)):
-    """Get all products with stock levels (Admin)"""
+def get_inventory(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all products with stock levels (Admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin only")
     products = db.query(Product).all()
     return products
 
 @router.get("/{product_id}")
-def get_product_stock(product_id: int, db: Session = Depends(get_db)):
-    """Get stock level for specific product"""
+def get_product_stock(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get stock level for specific product (Admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin only")
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Product not found"
         )
-    
+
     return {
         "product_id": product.id,
         "name": product.name,
@@ -34,25 +47,32 @@ def get_product_stock(product_id: int, db: Session = Depends(get_db)):
     }
 
 @router.put("/{product_id}/add-stock")
-def add_stock(product_id: int, stock_update: StockUpdate, db: Session = Depends(get_db)):
-    """Add stock to product (Admin)"""
+def add_stock(
+    product_id: int,
+    stock_update: StockUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Add stock to product (Admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin only")
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Product not found"
         )
-    
+
     if stock_update.quantity <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Quantity must be greater than 0"
         )
-    
+
     product.stock_quantity += stock_update.quantity
     db.commit()
     db.refresh(product)
-    
+
     return {
         "message": "Stock added successfully",
         "product": {
@@ -63,31 +83,38 @@ def add_stock(product_id: int, stock_update: StockUpdate, db: Session = Depends(
     }
 
 @router.put("/{product_id}/reduce-stock")
-def reduce_stock(product_id: int, stock_update: StockUpdate, db: Session = Depends(get_db)):
-    """Reduce stock from product (Admin)"""
+def reduce_stock(
+    product_id: int,
+    stock_update: StockUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Reduce stock from product (Admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin only")
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Product not found"
         )
-    
+
     if stock_update.quantity <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Quantity must be greater than 0"
         )
-    
+
     if product.stock_quantity < stock_update.quantity:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Insufficient stock. Available: {product.stock_quantity}"
         )
-    
+
     product.stock_quantity -= stock_update.quantity
     db.commit()
     db.refresh(product)
-    
+
     return {
         "message": "Stock reduced successfully",
         "product": {
