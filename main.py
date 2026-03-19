@@ -16,9 +16,7 @@ from app.routes import (
     inventory_router,
 )
 
-# ===============================
-# Logging
-# ===============================
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -89,5 +87,5 @@ def read_root():
 # ===============================
 
 @app.get("/health")
-def health_check():
+def health_check(): 
     return {"status": "ok"}
