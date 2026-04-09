@@ -1,26 +1,39 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
+
 from app.core.database import get_db
 from app.models.product import Product
 from app.models.user import User, UserRole
 from app.dependencies import get_current_user
-from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/inventory", tags=["Inventory"])
 
+
 class StockUpdate(BaseModel):
     quantity: int
+
+
+def admin_only(user: User):
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin only")
+
+
+def get_product(db: Session, product_id: int):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
+
 
 @router.get("/")
 def get_inventory(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get all products with stock levels (Admin only)"""
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Admin only")
-    products = db.query(Product).all()
-    return products
+    admin_only(current_user)
+    return db.query(Product).all()
+
 
 @router.get("/{product_id}")
 def get_product_stock(
@@ -28,15 +41,8 @@ def get_product_stock(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get stock level for specific product (Admin only)"""
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Admin only")
-    product = db.query(Product).filter(Product.id == product_id).first()
-    if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found"
-        )
+    admin_only(current_user)
+    product = get_product(db, product_id)
 
     return {
         "product_id": product.id,
@@ -46,6 +52,7 @@ def get_product_stock(
         "price": product.price,
     }
 
+
 @router.put("/{product_id}/add-stock")
 def add_stock(
     product_id: int,
@@ -53,21 +60,12 @@ def add_stock(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Add stock to product (Admin only)"""
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Admin only")
-    product = db.query(Product).filter(Product.id == product_id).first()
-    if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found"
-        )
+
+    admin_only(current_user)
+    product = get_product(db, product_id)
 
     if stock_update.quantity <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Quantity must be greater than 0"
-        )
+        raise HTTPException(status_code=400, detail="Quantity must be greater than 0")
 
     product.stock_quantity += stock_update.quantity
     db.commit()
@@ -75,12 +73,9 @@ def add_stock(
 
     return {
         "message": "Stock added successfully",
-        "product": {
-            "id": product.id,
-            "name": product.name,
-            "stock_quantity": product.stock_quantity,
-        }
+        "stock_quantity": product.stock_quantity
     }
+
 
 @router.put("/{product_id}/reduce-stock")
 def reduce_stock(
@@ -89,25 +84,16 @@ def reduce_stock(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Reduce stock from product (Admin only)"""
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Admin only")
-    product = db.query(Product).filter(Product.id == product_id).first()
-    if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found"
-        )
+
+    admin_only(current_user)
+    product = get_product(db, product_id)
 
     if stock_update.quantity <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Quantity must be greater than 0"
-        )
+        raise HTTPException(status_code=400, detail="Quantity must be greater than 0")
 
     if product.stock_quantity < stock_update.quantity:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=400,
             detail=f"Insufficient stock. Available: {product.stock_quantity}"
         )
 
@@ -117,9 +103,5 @@ def reduce_stock(
 
     return {
         "message": "Stock reduced successfully",
-        "product": {
-            "id": product.id,
-            "name": product.name,
-            "stock_quantity": product.stock_quantity,
-        }
+        "stock_quantity": product.stock_quantity
     }

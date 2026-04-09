@@ -1,22 +1,34 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
-# Create database engine
+
+# =========================
+# DATABASE ENGINE
+# =========================
+
 engine = create_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
-    pool_pre_ping=True,
+    pool_pre_ping=True
 )
 
-# Create session factory
+
+# =========================
+# SESSION FACTORY
+# =========================
+
 SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
     bind=engine,
+    autocommit=False,
+    autoflush=False
 )
 
-# Dependency to get DB session
+
+# =========================
+# DATABASE DEPENDENCY
+# =========================
+
 def get_db():
     db = SessionLocal()
     try:
@@ -24,7 +36,11 @@ def get_db():
     finally:
         db.close()
 
-# Create all tables
+
+# =========================
+# INITIALIZE DATABASE
+# =========================
+
 def init_db():
     from app.models.base import Base
     Base.metadata.create_all(bind=engine)

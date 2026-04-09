@@ -2,6 +2,11 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
+
+# =========================
+# BASE SCHEMA
+# =========================
+
 class ProductBase(BaseModel):
     name: str
     description: Optional[str] = None
@@ -9,15 +14,28 @@ class ProductBase(BaseModel):
     price: float
     stock_quantity: Optional[int] = 0
 
+
+# =========================
+# CREATE
+# =========================
+
 class ProductCreate(ProductBase):
     pass
 
-class ProductUpdate(BaseModel):
+
+# =========================
+# UPDATE
+# =========================
+
+class ProductUpdate(ProductBase):
     name: Optional[str] = None
-    description: Optional[str] = None
     size_liters: Optional[float] = None
     price: Optional[float] = None
-    stock_quantity: Optional[int] = None
+
+
+# =========================
+# RESPONSE
+# =========================
 
 class ProductResponse(ProductBase):
     id: int

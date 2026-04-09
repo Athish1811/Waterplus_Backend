@@ -11,63 +11,73 @@ from app.dependencies import get_current_user
 router = APIRouter(prefix="/api/products", tags=["Products"])
 
 
-# -----------------------------
-# Get All Products
-# -----------------------------
+# =========================
+# HELPER FUNCTIONS
+# =========================
+
+def get_product_or_404(db: Session, product_id: int):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
+
+
+def check_admin(user: User):
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+
+# =========================
+# GET ALL PRODUCTS
+# =========================
+
 @router.get("/", response_model=List[ProductResponse])
 def list_products(
     db: Session = Depends(get_db),
     skip: int = 0,
     limit: int = 20
 ):
-    """Get all active products with pagination"""
-    products = db.query(Product).filter(Product.is_active == True).offset(skip).limit(limit).all()
-    return products
+    return (
+        db.query(Product)
+        .filter(Product.is_active == True)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
-# -----------------------------
-# Get Single Product
-# -----------------------------
+# =========================
+# GET SINGLE PRODUCT
+# =========================
+
 @router.get("/{product_id}", response_model=ProductResponse)
 def get_product(product_id: int, db: Session = Depends(get_db)):
-    """Get single product"""
-    product = db.query(Product).filter(Product.id == product_id).first()
-
-    if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found"
-        )
-
-    return product
+    return get_product_or_404(db, product_id)
 
 
-# -----------------------------
-# Create Product (Admin Only)
-# -----------------------------
+# =========================
+# CREATE PRODUCT (ADMIN)
+# =========================
+
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 def create_product(
     product: ProductCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Create new product (Admin only)"""
-
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized"
-        )
+    check_admin(current_user)
 
     # Check if product already exists
     existing = db.query(Product).filter(Product.name == product.name).first()
 
+    # If exists → increase stock instead of error
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Product already exists"
-        )
+        existing.stock_quantity += product.stock_quantity
+        db.commit()
+        db.refresh(existing)
+        return existing
 
+    # Create new product
     new_product = Product(**product.model_dump())
 
     db.add(new_product)
@@ -77,9 +87,10 @@ def create_product(
     return new_product
 
 
-# -----------------------------
-# Update Product (Admin Only)
-# -----------------------------
+# =========================
+# UPDATE PRODUCT (ADMIN)
+# =========================
+
 @router.put("/{product_id}", response_model=ProductResponse)
 def update_product(
     product_id: int,
@@ -87,25 +98,11 @@ def update_product(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Update product (Admin only)"""
+    check_admin(current_user)
 
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized"
-        )
+    product = get_product_or_404(db, product_id)
 
-    product = db.query(Product).filter(Product.id == product_id).first()
-
-    if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found"
-        )
-
-    update_data = product_update.dict(exclude_unset=True)
-
-    for field, value in update_data.items():
+    for field, value in product_update.dict(exclude_unset=True).items():
         setattr(product, field, value)
 
     db.commit()
@@ -114,30 +111,19 @@ def update_product(
     return product
 
 
-# -----------------------------
-# Delete Product (Admin Only)
-# -----------------------------
+# =========================
+# DELETE PRODUCT (ADMIN)
+# =========================
+
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product(
     product_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Delete product (Admin only)"""
+    check_admin(current_user)
 
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized"
-        )
-
-    product = db.query(Product).filter(Product.id == product_id).first()
-
-    if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found"
-        )
+    product = get_product_or_404(db, product_id)
 
     db.delete(product)
     db.commit()

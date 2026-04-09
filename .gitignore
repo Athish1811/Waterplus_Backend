@@ -1,62 +1,16 @@
 # Virtual Environment
 venv/
-env/
-ENV/
-.venv
+.venv/
 
-# Python
+# Python cache
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+*.pyc
+
+# Environment variables (VERY IMPORTANT)
+.env
 
 # IDE
 .vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
 
 # Logs
 *.log
-logs/
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-
-# IDE Settings
-.editorconfig
-
-# OS
-Thumbs.db
-.DS_Store

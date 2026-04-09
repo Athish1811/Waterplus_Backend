@@ -3,21 +3,38 @@ from typing import Optional
 from datetime import datetime
 
 
+# =========================
+# BASE
+# =========================
+
 class OrderBase(BaseModel):
     product_id: int
     quantity: int
     delivery_address: str
 
 
+# =========================
+# CREATE
+# =========================
+
 class OrderCreate(OrderBase):
     pass
 
 
-class OrderUpdate(BaseModel):
-    status: Optional[str] = None
+# =========================
+# UPDATE
+# =========================
+
+class OrderUpdate(OrderBase):
+    product_id: Optional[int] = None
     quantity: Optional[int] = None
     delivery_address: Optional[str] = None
+    status: Optional[str] = None
 
+
+# =========================
+# RESPONSE
+# =========================
 
 class OrderResponse(BaseModel):
     id: int
@@ -34,7 +51,10 @@ class OrderResponse(BaseModel):
         from_attributes = True
 
 
-# 🔥 Add this
+# =========================
+# DETAIL RESPONSE
+# =========================
+
 class OrderDetailResponse(OrderResponse):
     product_name: Optional[str] = None
     customer_name: Optional[str] = None
