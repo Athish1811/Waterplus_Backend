@@ -8,16 +8,10 @@ load_dotenv()
 
 class Settings:
     # Database Configuration
-    DB_USER: str = os.getenv("DB_USER", "postgres")
-    DB_PASSWORD: str = os.getenv("DB_PASSWORD", "password")
-    DB_HOST: str = os.getenv("DB_HOST", "localhost")
-    DB_PORT: int = int(os.getenv("DB_PORT", 5432))
-    DB_NAME: str = os.getenv("DB_NAME", "watera_plus_db")
-
-    # DATABASE URL
+    # Use SQLite for local development
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        "sqlite:///./watera_plus_local.db"
     )
 
     # Server Configuration
