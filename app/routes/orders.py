@@ -21,8 +21,11 @@ router = APIRouter(prefix="/api/orders", tags=["Orders"])
 
 def build_order_detail(order: Order):
     detail = OrderDetailResponse.from_orm(order)
+
+    # 🔥 SAFE FALLBACK (avoid None issues)
     detail.product_name = order.product.name if order.product else "Unknown Product"
-    detail.customer_name = order.user.name if order.user else "Unknown User"
+    detail.customer_name = order.user.name if order.user else (order.name or "Unknown User")
+
     return detail
 
 
@@ -56,7 +59,9 @@ def create_order(
         product_id=order.product_id,
         quantity=order.quantity,
         total_price=total_price,
-        delivery_address=order.delivery_address
+        delivery_address=order.delivery_address,
+        name=order.name,
+        phone=order.phone
     )
 
     product.stock_quantity -= order.quantity
@@ -71,7 +76,7 @@ def create_order(
 
     detail = build_order_detail(new_order)
     detail.product_name = product.name
-    detail.customer_name = current_user.name
+    detail.customer_name = order.name
 
     return detail
 
@@ -91,6 +96,7 @@ def get_my_orders(
     orders = (
         db.query(Order)
         .filter(Order.user_id == current_user.id)
+        .order_by(Order.created_at.desc())
         .offset(skip)
         .limit(limit)
         .all()
@@ -141,7 +147,6 @@ def update_order_status(
 
     if order_update.status:
 
-        # restore stock if cancelling
         if (
             order_update.status == OrderStatus.CANCELLED
             and order.status != OrderStatus.CANCELLED

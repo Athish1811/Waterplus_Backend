@@ -35,6 +35,10 @@ class Order(Base):
     total_price = Column(Float, nullable=False)
     delivery_address = Column(String(500), nullable=False)
 
+    # ✅ NEW FIELDS
+    name = Column(String(100), nullable=False)
+    phone = Column(String(15), nullable=False)
+
     # Status
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)
 

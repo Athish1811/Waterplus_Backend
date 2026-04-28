@@ -82,10 +82,3 @@ def read_root():
         "docs": "/docs",
     }
 
-# ===============================
-# Health Check
-# ===============================
-
-@app.get("/health")
-def health_check():
-    return {"status": "ok"}

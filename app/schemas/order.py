@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, constr
 from typing import Optional
 from datetime import datetime
 
@@ -9,8 +9,12 @@ from datetime import datetime
 
 class OrderBase(BaseModel):
     product_id: int
-    quantity: int
-    delivery_address: str
+    quantity: int = Field(..., gt=0)
+    delivery_address: str = Field(..., min_length=5)
+
+    # 🔥 REQUIRED while creating order
+    name: str = Field(..., min_length=2)
+    phone: constr(pattern="^[0-9]{10}$")
 
 
 # =========================
@@ -25,10 +29,10 @@ class OrderCreate(OrderBase):
 # UPDATE
 # =========================
 
-class OrderUpdate(OrderBase):
+class OrderUpdate(BaseModel):
     product_id: Optional[int] = None
-    quantity: Optional[int] = None
-    delivery_address: Optional[str] = None
+    quantity: Optional[int] = Field(None, gt=0)
+    delivery_address: Optional[str] = Field(None, min_length=5)
     status: Optional[str] = None
 
 
@@ -43,6 +47,11 @@ class OrderResponse(BaseModel):
     quantity: int
     total_price: float
     delivery_address: str
+
+    # 🔥 FIX: optional (avoid crash for old DB data)
+    name: Optional[str] = None
+    phone: Optional[str] = None
+
     status: str
     created_at: datetime
     updated_at: datetime
