@@ -26,9 +26,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# @app.on_event("startup")
-# def startup_event():
-#     init_db()
+@app.on_event("startup")
+def startup_event():
+    init_db()
 
 app.include_router(auth_router)
 app.include_router(users_router, prefix="/api")
