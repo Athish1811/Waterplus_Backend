@@ -1,9 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import logging
 
 from app.core.database import init_db
-
 from app.routes import (
     auth_router,
     users_router,
@@ -15,51 +13,19 @@ from app.routes import (
     inventory_router,
 )
 
-# ===============================
-# Logging
-# ===============================
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
-
-logger = logging.getLogger("wateraplus")
-
-# ===============================
-# FastAPI App
-# ===============================
-
-app = FastAPI(
-    title="Watera Plus API",
-    description="Backend API for Watera Plus Water Delivery System",
-    version="1.0.0",
-)
-
-# ===============================
-# CORS
-# ===============================
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # Change in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ===============================
-# Startup Event
-# ===============================
-
 @app.on_event("startup")
 def startup_event():
-    logger.info("Starting Watera Plus API...")
     init_db()
-
-# ===============================
-# Routers
-# ===============================
 
 app.include_router(auth_router)
 app.include_router(users_router, prefix="/api")
@@ -70,15 +36,6 @@ app.include_router(dashboard_router)
 app.include_router(contact_router)
 app.include_router(inventory_router)
 
-# ===============================
-# Root Endpoint
-# ===============================
-
 @app.get("/")
 def read_root():
-    return {
-        "message": "Welcome to Watera Plus API",
-        "version": "1.0.0",
-        "docs": "/docs",
-    }
-
+    return {"message": "Welcome to Watera Plus API"}

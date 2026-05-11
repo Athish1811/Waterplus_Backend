@@ -79,6 +79,12 @@ def create_product(
 
     # Create new product
     new_product = Product(**product.model_dump())
+    # new_product = Product(
+    #     name = product.name,
+    #     price = product.price,
+    #     description = product.description
+    # )
+
 
     db.add(new_product)
     db.commit()
